@@ -1,0 +1,53 @@
+function plotLFPTrace(data,fs,params)
+
+%%% data = n x m vector for data stream - n timepoints and m channels.
+%%% This will plot each in subplots.
+%%% params.timestamps of interest = n x 1 vector for important points in the session
+%%% params.labels_of_interest = nx1 cell with labels to be added at the
+%%%                             relevant timepoints
+%%% params.savefile = string to save figure to
+%%% params.save = boolean of whether to save
+
+
+h = figure;
+
+if size(data,2)~=1
+    if size(data,1)==1
+        data = data';
+        disp('Looks like the data vector is flipped around!  Inverting...')
+    else
+        fprintf('%d channels detected, plotting these...\n',size(data,2))
+        n_plots = size(data,2);
+    end
+else 
+    n_plots = 1;
+end
+
+divs = divisors(n_plots); % requires symbolic math toolbox
+if mod(length(divs),2)==0
+    div_dists = divs-sqrt(n_plots);
+    m = divs(find(div_dists>0,1,'first')); % the larger number will be m
+    n = divs(find(div_dists<0,1,'last'));
+else 
+    m = divs(floor(length(divs)/2)+1);
+    n = m;
+end
+
+x = linspace(0,size(data,1)/(fs*60),size(data,1));
+for pl = 1:n_plots
+   
+    ax = subplot(m,n,pl); % this makes m rows and n columns of subplots - good for wide plots like traces
+    p = plot(ax,x,data(:,pl));
+    
+    xlim([0 size(data,1)/(fs*60)])
+    ylim([nanmean(data(:,pl))-(12*nanstd(data(:,pl))) nanmean(data(:,pl))+(12*nanstd(data(:,pl)))])
+
+    xlabel('Time /mins')
+    ylabel('Voltage /mV') % this is not right - the channels won't all be voltage - should be labelled per something given in params if it exists, if not just label Voltage
+
+end
+
+
+if params.save
+    saveas(h,params.savefile)
+end
